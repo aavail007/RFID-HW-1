@@ -15,8 +15,10 @@ namespace WindowsFormsApplication6
         public Form1()
         {
             InitializeComponent();
-        }
 
+            cbKeyType.Items.Add("A");
+            cbKeyType.Items.Add("B");
+        }
 
         MW_EasyPOD EasyPOD;
 
@@ -29,76 +31,71 @@ namespace WindowsFormsApplication6
 
         unsafe public void btnReadData_Click(object sender, EventArgs e)
         {
-            try
-            {
-                // 取得 UI 選擇的值
-                byte sector = Convert.ToByte(cbSector.SelectedItem.ToString(), 16);
-                byte block = Convert.ToByte(cbBlock.SelectedItem.ToString(), 16);
-                byte keyType = (cbKeyType.SelectedItem.ToString() == "A") ? (byte)0x60 : (byte)0x61;
-                byte[] keyBytes = StringToByteArray(txtKey.Text); // 將 "FFFFFFFFFFFF" 轉成 6-byte array
+                // UI 選項
+                byte KEYA = 0x60;
+                byte KEYB = 0x61;
+                byte SECTOR_NO = 0x00;
+                byte BLOCK_NO = 0x01;
+                byte[] KEY_VALUE = new byte[] { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-                // 檢查 Key 長度
-                if (keyBytes.Length != 6)
-                {
-                    MessageBox.Show("Key 必須是 6 Bytes (12 個十六進位字元)");
-                    return;
-                }
 
-                // 組出 WriteBuffer
-                byte[] WriteBuffer = new byte[12]; // STX + LEN + CMD + KeyType + 6-byte key + sector + block
-                WriteBuffer[0] = 0x02; // STX
-                WriteBuffer[1] = 0x0A; // LEN = 10 bytes (不包含 STX、LEN)
-                WriteBuffer[2] = 0x15; // CMD = Read Data
-                WriteBuffer[3] = keyType;
-                Array.Copy(keyBytes, 0, WriteBuffer, 4, 6);
-                WriteBuffer[10] = sector;
-                WriteBuffer[11] = block;
+                byte STX = 0x02;
+                byte LEN = 0x00;
+                byte CMD = 0x15;
+                byte[] DATA = new byte[0];
+                var DATA_LIST = new List<byte>();
+            DATA_LIST.Add(cbKeyType.Text == "A" ? KEYA : KEYB);
+                DATA_LIST.AddRange(KEY_VALUE);
+                DATA_LIST.Add(SECTOR_NO);
+                DATA_LIST.Add(BLOCK_NO);
 
-                // 建立接收緩衝區
-                byte[] ReadBuffer = new byte[64];
-                UInt32 uiRead = 0, uiWritten = 0;
+                DATA = DATA_LIST.ToArray();
 
-                //// 連線讀卡機
+
+                LEN = (byte)(DATA.Length + 1); // CMD + DATA Length
+
+                byte[] ReadBuffer = new byte[0x40];
+                byte[] WriteBuffer = new byte[0];
+                var writeData = new List<byte>();
+
+                writeData.Add(STX);
+                writeData.Add(LEN);
+                writeData.Add(CMD);
+                writeData.AddRange(DATA);
+                WriteBuffer = writeData.ToArray();
+
+
+                UInt32 uiLength, uiRead, uiResult, uiWritten;
+                EasyPOD.VID = 0xe6a;
+                EasyPOD.PID = 0x317;
+                uint Index = 1;
+                uint dwResult;
+                uiLength = 64;
+
                 fixed (MW_EasyPOD* pPOD = &EasyPOD)
                 {
+
                     dwResult = PODfuncs.ConnectPOD(pPOD, Index);
 
-                    if (dwResult != 0)
+                    if ((dwResult != 0))
                     {
-                        MessageBox.Show("讀卡機尚未連線");
-                        return;
-                    }
-
-                    EasyPOD.ReadTimeOut = 200;
-                    EasyPOD.WriteTimeOut = 200;
-
-                    // 送出讀取指令
-                    dwResult = PODfuncs.WriteData(pPOD, WriteBuffer, (UInt32)WriteBuffer.Length, &uiWritten);
-                    UInt32 uiResult = PODfuncs.ReadData(pPOD, ReadBuffer, (UInt32)ReadBuffer.Length, &uiRead);
-
-                    if (uiRead < 4)
-                    {
-                        MessageBox.Show("沒有收到正確回應");
-                    }
-                    else if (ReadBuffer[3] != 0x00) // STATUS 不等於 0x00 表示失敗
-                    {
-                        MessageBox.Show("讀取失敗或 Key 錯誤");
+                        MessageBox.Show("Not connected yet");
                     }
                     else
                     {
-                        // 將讀取到的 16 Bytes 資料轉成 HEX
-                        string dataHex = BitConverter.ToString(ReadBuffer, 4, 16).Replace("-", " ");
-                        txtResult.Text = dataHex;
-                    }
+                        EasyPOD.ReadTimeOut = 200;
+                        EasyPOD.WriteTimeOut = 200;
 
-                    PODfuncs.ClearPODBuffer(pPOD);
-                    PODfuncs.DisconnectPOD(pPOD);
+                        dwResult = PODfuncs.WriteData(pPOD, WriteBuffer, 6, &uiWritten);    //Send a request command to reader
+                        uiResult = PODfuncs.ReadData(pPOD, ReadBuffer, uiLength, &uiRead);  //Read the response data from reader
+
+                        var i = uiRead - 4; // RX Length -[ STX - LEN - CMD - STATUS ] Length
+                    txtResult.Text = BitConverter.ToString(ReadBuffer, 4, (int)i).Replace("-", " ");  //HEX
                 }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("發生錯誤：" + ex.Message);
-            }
+                    dwResult = PODfuncs.ClearPODBuffer(pPOD);
+                    dwResult = PODfuncs.DisconnectPOD(pPOD);
+                }
+
         }
 
         // 工具函式：把 "FFFFFFFFFFFF" 轉成 byte[]

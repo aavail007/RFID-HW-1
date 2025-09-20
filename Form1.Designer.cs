@@ -80,7 +80,6 @@
             this.txtResult.Name = "txtResult";
             this.txtResult.Size = new System.Drawing.Size(311, 29);
             this.txtResult.TabIndex = 10;
-            this.txtResult.TextChanged += new System.EventHandler(this.txbGetUIDd_TextChanged);
             // 
             // btnReadData
             // 
