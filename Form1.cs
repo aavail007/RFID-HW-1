@@ -35,7 +35,7 @@ namespace WindowsFormsApplication6
                 byte KEYA = 0x60;
                 byte KEYB = 0x61;
                 byte SECTOR_NO = 0x00;
-                byte BLOCK_NO = 0x01;
+                byte BLOCK_NO = 0x00;
                 byte[] KEY_VALUE = new byte[] { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
 
@@ -44,7 +44,7 @@ namespace WindowsFormsApplication6
                 byte CMD = 0x15;
                 byte[] DATA = new byte[0];
                 var DATA_LIST = new List<byte>();
-            DATA_LIST.Add(cbKeyType.Text == "A" ? KEYA : KEYB);
+                DATA_LIST.Add(cbKeyType.Text == "A" ? KEYA : KEYB);
                 DATA_LIST.AddRange(KEY_VALUE);
                 DATA_LIST.Add(SECTOR_NO);
                 DATA_LIST.Add(BLOCK_NO);
@@ -86,11 +86,23 @@ namespace WindowsFormsApplication6
                         EasyPOD.ReadTimeOut = 200;
                         EasyPOD.WriteTimeOut = 200;
 
-                        dwResult = PODfuncs.WriteData(pPOD, WriteBuffer, 6, &uiWritten);    //Send a request command to reader
+                        dwResult = PODfuncs.WriteData(pPOD, WriteBuffer, (UInt32)WriteBuffer.Length, &uiWritten);  //Send a request command to reader
+
                         uiResult = PODfuncs.ReadData(pPOD, ReadBuffer, uiLength, &uiRead);  //Read the response data from reader
 
-                        var i = uiRead - 4; // RX Length -[ STX - LEN - CMD - STATUS ] Length
-                    txtResult.Text = BitConverter.ToString(ReadBuffer, 4, (int)i).Replace("-", " ");  //HEX
+                        // 取出 16 Bytes 資料
+                        byte[] dataBytes = new byte[16];
+                        Array.Copy(ReadBuffer, 4, dataBytes, 0, 16);
+
+                        // 轉成連續 HEX 字串（每 byte 兩位，不加空格）
+                        StringBuilder sb = new StringBuilder();
+                        foreach (byte b in dataBytes)
+                        {
+                            sb.Append(b.ToString("X2"));
+                        }
+
+                        txtResult.Text = sb.ToString();
+
                 }
                     dwResult = PODfuncs.ClearPODBuffer(pPOD);
                     dwResult = PODfuncs.DisconnectPOD(pPOD);
