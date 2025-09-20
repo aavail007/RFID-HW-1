@@ -27,7 +27,7 @@ namespace WindowsFormsApplication6
 
         }
 
-        private void btnReadData_Click(object sender, EventArgs e)
+        unsafe public void btnReadData_Click(object sender, EventArgs e)
         {
             try
             {
@@ -59,41 +59,41 @@ namespace WindowsFormsApplication6
                 UInt32 uiRead = 0, uiWritten = 0;
 
                 //// 連線讀卡機
-                //fixed (MW_EasyPOD* pPOD = &EasyPOD)
-                //{
-                //    dwResult = PODfuncs.ConnectPOD(pPOD, Index);
+                fixed (MW_EasyPOD* pPOD = &EasyPOD)
+                {
+                    dwResult = PODfuncs.ConnectPOD(pPOD, Index);
 
-                //    if (dwResult != 0)
-                //    {
-                //        MessageBox.Show("讀卡機尚未連線");
-                //        return;
-                //    }
+                    if (dwResult != 0)
+                    {
+                        MessageBox.Show("讀卡機尚未連線");
+                        return;
+                    }
 
-                //    EasyPOD.ReadTimeOut = 200;
-                //    EasyPOD.WriteTimeOut = 200;
+                    EasyPOD.ReadTimeOut = 200;
+                    EasyPOD.WriteTimeOut = 200;
 
-                //    // 送出讀取指令
-                //    dwResult = PODfuncs.WriteData(pPOD, WriteBuffer, (UInt32)WriteBuffer.Length, &uiWritten);
-                //    UInt32 uiResult = PODfuncs.ReadData(pPOD, ReadBuffer, (UInt32)ReadBuffer.Length, &uiRead);
+                    // 送出讀取指令
+                    dwResult = PODfuncs.WriteData(pPOD, WriteBuffer, (UInt32)WriteBuffer.Length, &uiWritten);
+                    UInt32 uiResult = PODfuncs.ReadData(pPOD, ReadBuffer, (UInt32)ReadBuffer.Length, &uiRead);
 
-                //    if (uiRead < 4)
-                //    {
-                //        MessageBox.Show("沒有收到正確回應");
-                //    }
-                //    else if (ReadBuffer[3] != 0x00) // STATUS 不等於 0x00 表示失敗
-                //    {
-                //        MessageBox.Show("讀取失敗或 Key 錯誤");
-                //    }
-                //    else
-                //    {
-                //        // 將讀取到的 16 Bytes 資料轉成 HEX
-                //        string dataHex = BitConverter.ToString(ReadBuffer, 4, 16).Replace("-", " ");
-                //        txtResult.Text = dataHex;
-                //    }
+                    if (uiRead < 4)
+                    {
+                        MessageBox.Show("沒有收到正確回應");
+                    }
+                    else if (ReadBuffer[3] != 0x00) // STATUS 不等於 0x00 表示失敗
+                    {
+                        MessageBox.Show("讀取失敗或 Key 錯誤");
+                    }
+                    else
+                    {
+                        // 將讀取到的 16 Bytes 資料轉成 HEX
+                        string dataHex = BitConverter.ToString(ReadBuffer, 4, 16).Replace("-", " ");
+                        txtResult.Text = dataHex;
+                    }
 
-                //    PODfuncs.ClearPODBuffer(pPOD);
-                //    PODfuncs.DisconnectPOD(pPOD);
-                //}
+                    PODfuncs.ClearPODBuffer(pPOD);
+                    PODfuncs.DisconnectPOD(pPOD);
+                }
             }
             catch (Exception ex)
             {

@@ -31,7 +31,7 @@
             this.Label2 = new System.Windows.Forms.Label();
             this.Label1 = new System.Windows.Forms.Label();
             this.btnClose = new System.Windows.Forms.Button();
-            this.txbGetUIDd = new System.Windows.Forms.TextBox();
+            this.txtResult = new System.Windows.Forms.TextBox();
             this.btnReadData = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
@@ -73,14 +73,14 @@
             this.btnClose.UseVisualStyleBackColor = true;
             this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
             // 
-            // txbGetUIDd
+            // txtResult
             // 
-            this.txbGetUIDd.Location = new System.Drawing.Point(16, 111);
-            this.txbGetUIDd.Margin = new System.Windows.Forms.Padding(4);
-            this.txbGetUIDd.Name = "txbGetUIDd";
-            this.txbGetUIDd.Size = new System.Drawing.Size(311, 29);
-            this.txbGetUIDd.TabIndex = 10;
-            this.txbGetUIDd.TextChanged += new System.EventHandler(this.txbGetUIDd_TextChanged);
+            this.txtResult.Location = new System.Drawing.Point(16, 111);
+            this.txtResult.Margin = new System.Windows.Forms.Padding(4);
+            this.txtResult.Name = "txtResult";
+            this.txtResult.Size = new System.Drawing.Size(311, 29);
+            this.txtResult.TabIndex = 10;
+            this.txtResult.TextChanged += new System.EventHandler(this.txbGetUIDd_TextChanged);
             // 
             // btnReadData
             // 
@@ -162,7 +162,7 @@
             this.Controls.Add(this.Label2);
             this.Controls.Add(this.Label1);
             this.Controls.Add(this.btnClose);
-            this.Controls.Add(this.txbGetUIDd);
+            this.Controls.Add(this.txtResult);
             this.Controls.Add(this.btnReadData);
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Form1";
@@ -178,7 +178,7 @@
         internal System.Windows.Forms.Label Label2;
         internal System.Windows.Forms.Label Label1;
         internal System.Windows.Forms.Button btnClose;
-        internal System.Windows.Forms.TextBox txbGetUIDd;
+        internal System.Windows.Forms.TextBox txtResult;
         internal System.Windows.Forms.Button btnReadData;
         internal System.Windows.Forms.Label label3;
         internal System.Windows.Forms.Label label4;
