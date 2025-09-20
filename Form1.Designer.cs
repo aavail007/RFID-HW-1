@@ -60,7 +60,6 @@
             this.Label1.Size = new System.Drawing.Size(67, 18);
             this.Label1.TabIndex = 13;
             this.Label1.Text = "Sector : ";
-            this.Label1.Click += new System.EventHandler(this.Label1_Click);
             // 
             // btnClose
             // 
@@ -119,7 +118,6 @@
             this.cbSector.Name = "cbSector";
             this.cbSector.Size = new System.Drawing.Size(81, 26);
             this.cbSector.TabIndex = 16;
-            this.cbSector.Text = "00";
             // 
             // cbBlock
             // 
@@ -128,7 +126,6 @@
             this.cbBlock.Name = "cbBlock";
             this.cbBlock.Size = new System.Drawing.Size(81, 26);
             this.cbBlock.TabIndex = 17;
-            this.cbBlock.Text = "00";
             // 
             // cbKeyType
             // 
@@ -137,7 +134,6 @@
             this.cbKeyType.Name = "cbKeyType";
             this.cbKeyType.Size = new System.Drawing.Size(81, 26);
             this.cbKeyType.TabIndex = 18;
-            this.cbKeyType.Text = "A";
             // 
             // txtKey
             // 
@@ -166,7 +162,6 @@
             this.Margin = new System.Windows.Forms.Padding(4);
             this.Name = "Form1";
             this.Text = "Form1";
-            this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
