@@ -7,24 +7,33 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using static System.Collections.Specialized.BitVector32;
-//using System.BitConverter;
 
 namespace WindowsFormsApplication6
 {
     public partial class Form1 : Form
     {
-        
+        // 常數定義
+        const byte STX = 0x02; // 封包起始符號，用於標記命令封包的開頭
+        const byte CMD_READ = 0x15; // 讀取命令
+        const UInt32 VENDOR_ID = 0xe6a; // 設定裝置 Vendor ID (對應 RD200_RD300_Tools_V0225_20160913.exe 應用程式中的 VID)
+        const UInt32 PRODUCT_ID = 0x317; // 設定裝置 Product ID (對應 RD200_RD300_Tools_V0225_20160913.exe 應用程式中的 PID)
+        const UInt32 READ_LENGTH = 64;
+        const int DATA_OFFSET = 4; // 資料區起始位置 (跳過 STX、LEN、CMD、STATUS)
+        const int DATA_SIZE = 16; // 成功時回傳的卡片區塊內容固定 16 Bytes
+        const uint DEVICE_INDEX = 1;
+        const string DEFAULT_LOAD_KEY = "FFFFFFFFFFFF"; // Load kEY 預設值
+
         public Form1()
         {
             InitializeComponent();
 
-            // 初始化選項
+            // 初始化選項項目
             initialCbSector();
             initialCbBlock();
             initialCbKey();
 
             // 設定預設值
-            loadKey.Text = "FFFFFFFFFFFF";
+            loadKey.Text = DEFAULT_LOAD_KEY;
 
             // 綁定事件
             cbSector.SelectedIndexChanged += (s, e) => ValidateForm();
@@ -38,79 +47,95 @@ namespace WindowsFormsApplication6
 
         unsafe public void btnReadData_Click(object sender, EventArgs e)
         {
-                 // 取得 UI 選項、輸入框的值
+            try
+            {
+                // 取得 UI 選項、輸入框的值
                 byte keyType = (byte)cbKeyType.SelectedValue;
                 byte sectorNo = byte.Parse(cbSector.SelectedItem.ToString());
                 byte blockNo = byte.Parse(cbBlock.SelectedItem.ToString());
                 byte[] keyValue = StringToByteArray(loadKey.Text);
 
-                /// Protocol
-                ///  Read Data (0x15) 
-                ///  <STX> + LEN + CMD + DATA
-                byte STX = 0x02;
-                byte LEN = 0x00;
-                byte CMD = 0x15; // 命令碼
-                byte[] DATA = new byte[0]; // [Key Type] + [Key Value] +  [Sector Number] + [Block Number]
-                var DATA_LIST = new List<byte>();
-                DATA_LIST.Add(keyType);
-                DATA_LIST.AddRange(keyValue);
-                DATA_LIST.Add(sectorNo);
-                DATA_LIST.Add(blockNo);
+                // 組出 WriteBuffer 傳送給讀卡機的指令
+                byte[] WriteBuffer = BuildReadCommand(STX, CMD_READ, keyType, keyValue, sectorNo, blockNo);
+                byte[] ReadBuffer = new byte[READ_LENGTH];
 
-                DATA = DATA_LIST.ToArray();
-                LEN = (byte)(DATA.Length + 1); // CMD + DATA Length
+                // 設定裝置參數
+                EasyPOD.VID = VENDOR_ID;
+                EasyPOD.PID = PRODUCT_ID;
 
-                byte[] ReadBuffer = new byte[0x40];
-                byte[] WriteBuffer = new byte[0];
-                var writeData = new List<byte>();
-
-                writeData.Add(STX);
-                writeData.Add(LEN);
-                writeData.Add(CMD);
-                writeData.AddRange(DATA);
-                WriteBuffer = writeData.ToArray();
-
-
-                UInt32 uiLength, uiRead, uiResult, uiWritten;
-                EasyPOD.VID = 0xe6a; // 設定裝置 Vendor ID (對應 RD200_RD300_Tools_V0225_20160913.exe 應用程式中的 VID)
-                EasyPOD.PID = 0x317; // 設定裝置 Product ID (對應 RD200_RD300_Tools_V0225_20160913.exe 應用程式中的 PID)
-                uint Index = 1;
-                uint dwResult;
-                uiLength = 64; // 設定預期讀取長度
+                UInt32 uiRead = 0, uiWritten = 0, uiResult = 0;
+                dwResult = 0;
 
                 fixed (MW_EasyPOD* pPOD = &EasyPOD)
                 {
-
-                    dwResult = PODfuncs.ConnectPOD(pPOD, Index);
-
-                    if ((dwResult != 0))
+                    dwResult = PODfuncs.ConnectPOD(pPOD, DEVICE_INDEX);
+                    if (dwResult != 0)
                     {
-                        MessageBox.Show("Not connected yet");
+                        MessageBox.Show("讀卡機尚未連線");
+                        return;
                     }
-                    else
+
+                    EasyPOD.ReadTimeOut = 200;
+                    EasyPOD.WriteTimeOut = 200;
+
+                    dwResult = PODfuncs.WriteData(pPOD, WriteBuffer, (UInt32)WriteBuffer.Length, &uiWritten);
+                    uiResult = PODfuncs.ReadData(pPOD, ReadBuffer, READ_LENGTH, &uiRead);
+
+                    if (uiRead < DATA_OFFSET)
                     {
-                        EasyPOD.ReadTimeOut = 200;
-                        EasyPOD.WriteTimeOut = 200;
-
-                        dwResult = PODfuncs.WriteData(pPOD, WriteBuffer, (UInt32)WriteBuffer.Length, &uiWritten);   // 傳送指令給讀卡機
-                        uiResult = PODfuncs.ReadData(pPOD, ReadBuffer, uiLength, &uiRead);  // 從裝置讀取回應資料
-
-                        // 取出 16 Bytes 資料
-                        byte[] dataBytes = new byte[16];
-                        Array.Copy(ReadBuffer, 4, dataBytes, 0, 16);
-
-                        // 轉成連續 HEX 字串（每 byte 兩位，不加空格）
-                        StringBuilder sb = new StringBuilder();
-                        foreach (byte b in dataBytes)
-                        {
-                            sb.Append(b.ToString("X2"));
-                        }
-
-                        txtResult.Text = sb.ToString();
+                        MessageBox.Show("沒有收到正確回應，缺少 Status");
+                        return;
                     }
-                    dwResult = PODfuncs.ClearPODBuffer(pPOD); // 清除裝置緩衝區
-                    dwResult = PODfuncs.DisconnectPOD(pPOD);  // 中斷裝置連線
+
+                    byte status = ReadBuffer[3]; // STATUS 在回應的第 4 byte
+
+                    switch (status)
+                    {
+                        case 0x10:
+                            MessageBox.Show("Command error：指令錯誤");
+                            break;
+
+                        case 0x01:
+                            MessageBox.Show("No card 或 Key 錯誤");
+                            break;
+
+                        case 0x00:
+                            if (uiRead < DATA_OFFSET + DATA_SIZE)
+                            {
+                                MessageBox.Show("回應資料長度不足");
+                                return;
+                            }
+
+                            // 成功，取出 16 Bytes 資料並轉 HEX
+                            string hex = BitConverter.ToString(ReadBuffer, DATA_OFFSET, DATA_SIZE).Replace("-", "");
+                            txtResult.Text = hex;
+                            break;
+
+                        default:
+                            MessageBox.Show($"未知狀態碼: 0x{status:X2}");
+                            break;
+                    }
+                    PODfuncs.ClearPODBuffer(pPOD);
+                    PODfuncs.DisconnectPOD(pPOD);
                 }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"發生錯誤：{ex.Message}");
+            }
+        }
+
+        // 組封裝包函式 Request  = STX + LEN + CMD + DATA
+        private byte[] BuildReadCommand(byte stx, byte cmd, byte keyType, byte[] keyValue, byte sectorNo, byte blockNo)
+        {
+            var data = new List<byte> { keyType };
+            data.AddRange(keyValue);
+            data.Add(sectorNo);
+            data.Add(blockNo);
+            byte len = (byte)(data.Count + 1); // CMD + DATA length
+            var buffer = new List<byte> { stx, len, cmd };
+            buffer.AddRange(data);
+            return buffer.ToArray();
         }
 
         // 初始化 Sector 選項
@@ -152,6 +177,8 @@ namespace WindowsFormsApplication6
             cbKeyType.DataSource = new BindingSource(keyOptions, null);
             cbKeyType.DisplayMember = "Key";
             cbKeyType.ValueMember = "Value";
+
+            cbKeyType.SelectedIndex = -1; // 預設不選
         }
 
         private byte[] StringToByteArray(string txtKey)
