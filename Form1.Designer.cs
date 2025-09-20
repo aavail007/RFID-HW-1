@@ -38,7 +38,7 @@
             this.cbSector = new System.Windows.Forms.ComboBox();
             this.cbBlock = new System.Windows.Forms.ComboBox();
             this.cbKeyType = new System.Windows.Forms.ComboBox();
-            this.txtKey = new System.Windows.Forms.TextBox();
+            this.loadKey = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // Label2
@@ -77,11 +77,12 @@
             this.txtResult.Location = new System.Drawing.Point(16, 111);
             this.txtResult.Margin = new System.Windows.Forms.Padding(4);
             this.txtResult.Name = "txtResult";
-            this.txtResult.Size = new System.Drawing.Size(311, 29);
+            this.txtResult.Size = new System.Drawing.Size(333, 29);
             this.txtResult.TabIndex = 10;
             // 
             // btnReadData
             // 
+            this.btnReadData.Enabled = false;
             this.btnReadData.Location = new System.Drawing.Point(357, 111);
             this.btnReadData.Margin = new System.Windows.Forms.Padding(4);
             this.btnReadData.Name = "btnReadData";
@@ -135,20 +136,19 @@
             this.cbKeyType.Size = new System.Drawing.Size(81, 26);
             this.cbKeyType.TabIndex = 18;
             // 
-            // txtKey
+            // loadKey
             // 
-            this.txtKey.Location = new System.Drawing.Point(321, 48);
-            this.txtKey.Name = "txtKey";
-            this.txtKey.Size = new System.Drawing.Size(148, 29);
-            this.txtKey.TabIndex = 19;
-            this.txtKey.Text = "FFFFFFFFFFFF";
+            this.loadKey.Location = new System.Drawing.Point(321, 48);
+            this.loadKey.Name = "loadKey";
+            this.loadKey.Size = new System.Drawing.Size(148, 29);
+            this.loadKey.TabIndex = 19;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(484, 206);
-            this.Controls.Add(this.txtKey);
+            this.Controls.Add(this.loadKey);
             this.Controls.Add(this.cbKeyType);
             this.Controls.Add(this.cbBlock);
             this.Controls.Add(this.cbSector);
@@ -179,7 +179,7 @@
         private System.Windows.Forms.ComboBox cbSector;
         private System.Windows.Forms.ComboBox cbBlock;
         private System.Windows.Forms.ComboBox cbKeyType;
-        private System.Windows.Forms.TextBox txtKey;
+        private System.Windows.Forms.TextBox loadKey;
     }
 }
 
