@@ -1,0 +1,1 @@
+EasyPOD.dll請放入此資料夾
