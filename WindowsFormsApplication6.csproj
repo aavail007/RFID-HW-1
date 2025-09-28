@@ -83,6 +83,18 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
   </ItemGroup>
+  <!-- 
+	  注意：
+	  1. EasyPOD.dll 不放入 Git
+	  2. 請手動將 EasyPOD.dll 複製到專案的 libs 資料夾（依照 README 說明）
+	  3. Build 時會自動複製到輸出資料夾 (bin\Debug 或 bin\Release)，並放在根目錄
+  -->
+  <ItemGroup>
+	  <None Include="libs\EasyPOD.dll">
+		<Link>EasyPOD.dll</Link>
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
