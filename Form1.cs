@@ -17,17 +17,17 @@ namespace WindowsFormsApplication6
         const byte CMD_READ = 0x15; // 讀取命令
         const UInt32 VENDOR_ID = 0xe6a; // 設定裝置 Vendor ID (對應 RD200_RD300_Tools_V0225_20160913.exe 應用程式中的 VID)
         const UInt32 PRODUCT_ID = 0x317; // 設定裝置 Product ID (對應 RD200_RD300_Tools_V0225_20160913.exe 應用程式中的 PID)
-        const UInt32 READ_LENGTH = 64;
+        const UInt32 READ_LENGTH = 64; // 讀取緩衝區長度
         const int DATA_OFFSET = 4; // 資料區起始位置 (跳過 STX、LEN、CMD、STATUS)
         const int DATA_SIZE = 16; // 成功時回傳的卡片區塊內容固定 16 Bytes
-        const uint DEVICE_INDEX = 1;
-        const string DEFAULT_LOAD_KEY = "FFFFFFFFFFFF"; // Load kEY 預設值
+        const uint DEVICE_INDEX = 1; // 裝置索引
+        const string DEFAULT_LOAD_KEY = "FFFFFFFFFFFF"; // Load Key 預設值
 
         public Form1()
         {
             InitializeComponent();
 
-            // 初始化選項項目
+            // 初始化下拉選單選項
             initialCbSector();
             initialCbBlock();
             initialCbKey();
@@ -35,16 +35,19 @@ namespace WindowsFormsApplication6
             // 設定預設值
             loadKey.Text = DEFAULT_LOAD_KEY;
 
-            // 綁定事件
+            // 綁定下拉選單與輸入框的變更事件，確保表單驗證即時更新
             cbSector.SelectedIndexChanged += (s, e) => ValidateForm();
             cbBlock.SelectedIndexChanged += (s, e) => ValidateForm();
             cbKeyType.SelectedIndexChanged += (s, e) => ValidateForm();
             loadKey.TextChanged += (s, e) => ValidateForm();
         }
 
-        MW_EasyPOD EasyPOD;
+        MW_EasyPOD EasyPOD; // 讀卡機結構體
         UInt32 dwResult, Index;
 
+        /// <summary>
+        /// 讀取卡片資料按鈕事件
+        /// </summary>
         unsafe public void btnReadData_Click(object sender, EventArgs e)
         {
             try
@@ -66,8 +69,10 @@ namespace WindowsFormsApplication6
                 UInt32 uiRead = 0, uiWritten = 0, uiResult = 0;
                 dwResult = 0;
 
+                // 使用 fixed 取得 EasyPOD 結構體指標，進行底層 DLL 操作
                 fixed (MW_EasyPOD* pPOD = &EasyPOD)
                 {
+                    // 連線到讀卡機
                     dwResult = PODfuncs.ConnectPOD(pPOD, DEVICE_INDEX);
                     if (dwResult != 0)
                     {
@@ -75,12 +80,16 @@ namespace WindowsFormsApplication6
                         return;
                     }
 
+                    // 設定逾時時間
                     EasyPOD.ReadTimeOut = 200;
                     EasyPOD.WriteTimeOut = 200;
 
+                    // 寫入指令到讀卡機
                     dwResult = PODfuncs.WriteData(pPOD, WriteBuffer, (UInt32)WriteBuffer.Length, &uiWritten);
+                    // 讀取回應資料
                     uiResult = PODfuncs.ReadData(pPOD, ReadBuffer, READ_LENGTH, &uiRead);
 
+                    // 檢查回應長度，至少要有狀態碼
                     if (uiRead < DATA_OFFSET)
                     {
                         MessageBox.Show("沒有收到正確回應，缺少 Status");
@@ -100,13 +109,14 @@ namespace WindowsFormsApplication6
                             break;
 
                         case 0x00:
+                            // 成功，檢查資料長度
                             if (uiRead < DATA_OFFSET + DATA_SIZE)
                             {
                                 MessageBox.Show("回應資料長度不足");
                                 return;
                             }
 
-                            // 成功，取出 16 Bytes 資料並轉 HEX
+                            // 取出 16 Bytes 資料並轉 HEX 字串顯示
                             string hex = BitConverter.ToString(ReadBuffer, DATA_OFFSET, DATA_SIZE).Replace("-", "");
                             txtResult.Text = hex;
                             break;
@@ -115,6 +125,7 @@ namespace WindowsFormsApplication6
                             MessageBox.Show($"未知狀態碼: 0x{status:X2}");
                             break;
                     }
+                    // 清除緩衝區並斷線
                     PODfuncs.ClearPODBuffer(pPOD);
                     PODfuncs.DisconnectPOD(pPOD);
                 }
@@ -125,7 +136,9 @@ namespace WindowsFormsApplication6
             }
         }
 
-        // 組封裝包函式 Request  = STX + LEN + CMD + DATA
+        /// <summary>
+        /// 組封裝包函式 Request  = STX + LEN + CMD + DATA
+        /// </summary>
         private byte[] BuildReadCommand(byte stx, byte cmd, byte keyType, byte[] keyValue, byte sectorNo, byte blockNo)
         {
             var data = new List<byte> { keyType };
@@ -138,19 +151,23 @@ namespace WindowsFormsApplication6
             return buffer.ToArray();
         }
 
-        // 初始化 Sector 選項
+        /// <summary>
+        /// 初始化 Sector 選項
+        /// </summary>
         private void initialCbSector()
         {
             // 限定只能用選的，不能輸入
             cbSector.DropDownStyle = ComboBoxStyle.DropDownList;
-            // 建立 Sector 選單 (00 ~ 15)
+            // 建立 Sector 選單
             for (int i = 0; i < 16; i++)
             {
                 cbSector.Items.Add(i.ToString("D2")); // 兩位數格式
             }
         }
 
-        // 初始化Block 選項
+        /// <summary>
+        /// 初始化 Block 選項 (00~03)
+        /// </summary>
         private void initialCbBlock()
         {
             // 限定只能用選的，不能輸入
@@ -162,7 +179,9 @@ namespace WindowsFormsApplication6
             }
         }
 
-        // 初始化 Key 選項
+        /// <summary>
+        /// 初始化 Key 選項 (A/B)
+        /// </summary>
         private void initialCbKey()
         {
             // 限定只能用選的，不能輸入
@@ -181,6 +200,9 @@ namespace WindowsFormsApplication6
             cbKeyType.SelectedIndex = -1; // 預設不選
         }
 
+        /// <summary>
+        /// 將 12 碼 HEX 字串轉為 byte 陣列
+        /// </summary>
         private byte[] StringToByteArray(string txtKey)
         {
             string hex = txtKey.Trim(); // 移除前後空白
@@ -196,6 +218,9 @@ namespace WindowsFormsApplication6
             return bytes;
         }
 
+        /// <summary>
+        /// 驗證表單輸入是否合法，決定是否啟用讀取按鈕
+        /// </summary>
         private void ValidateForm()
         {
             string key = loadKey.Text.Trim();
@@ -212,6 +237,9 @@ namespace WindowsFormsApplication6
             btnReadData.Enabled = valid;
         }
 
+        /// <summary>
+        /// 關閉表單
+        /// </summary>
         private void btnClose_Click(object sender, EventArgs e)
         {
             Close();
